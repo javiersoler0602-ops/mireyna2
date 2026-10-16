@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuestro Universo 🪐🤍</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #020205;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none;
+        }
+
+        /* Título superior */
+        #ui-container {
+            position: absolute;
+            top: 25px;
+            width: 100%;
+            text-align: center;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        h1 {
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 4px;
+            margin: 0;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+        }
+
+        p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 13px;
+            letter-spacing: 2px;
+            margin-top: 6px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+        }
+
+        /* Etiquetas flotantes con los nombres de los planetas y el Sol */
+        .planet-label {
+            position: absolute;
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 3px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            pointer-events: none;
+            white-space: nowrap;
+            transform: translate(-50%, -150%);
+            transition: opacity 0.3s;
+        }
+
+        .sun-label {
+            border-color: rgba(255, 215, 0, 0.6);
+            color: #fffaed;
+        }
+
+        /* Tarjeta flotante para las frases de amor */
+        #card-modal {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(20, 20, 35, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(12px);
+            padding: 25px 35px;
+            border-radius: 20px;
+            color: #ffffff;
+            text-align: center;
+            max-width: 380px;
+            box-shadow: 0 0 40px rgba(255, 255, 255, 0.3);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s ease;
+            opacity: 0;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        #card-modal.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #card-modal h3 {
+            margin: 0 0 10px 0;
+            font-size: 20px;
+            color: #ffb6c1;
+            letter-spacing: 2px;
+        }
+
+        #card-modal p {
+            margin: 0;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #f0f0f0;
+        }
+
+        .modal-icons {
+            font-size: 30px;
+            margin-bottom: 8px;
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.6));
+        }
+
+        #close-btn {
+            margin-top: 15px;
+            background: #ffffff;
+            border: none;
+            color: #020205;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            letter-spacing: 1px;
+            transition: background 0.2s;
+        }
+
+        #close-btn:hover {
+            background: #ffb6c1;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-container">
+        <h1>Nuestro Universo 🪐🤍</h1>
+        <p>Arrastra para girar, haz zoom y toca cualquier planeta o el Sol</p>
+    </div>
+
+    <!-- Contenedor para las etiquetas -->
+    <div id="labels-container"></div>
+
+    <!-- Tarjeta de amor emergente -->
+    <div id="card-modal">
+        <div class="modal-icons" id="modal-icons">💐 🤍</div>
+        <h3 id="card-title">Título</h3>
+        <p id="card-text">Frase bonita aquí...</p>
+        <button id="close-btn" onclick="cerrarTarjeta()">Cerrar 🤍</button>
+    </div>
+
+    <!-- Importar Three.js y OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // 1. Configuración de la Escena 3D
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x020205, 0.01);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 10, 22);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 4;
+        controls.maxDistance = 35;
+
+        // 2. Iluminación
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+
+        const sunLight = new THREE.PointLight(0xfffaed, 2, 60);
+        sunLight.position.set(0, 0, 0);
+        scene.add(sunLight);
+
+        // 3. Fondo con estrellas
+        const particlesCount = 1500;
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesPositions = new Float32Array(particlesCount * 3);
+
+        for (let i = 0; i < particlesCount * 3; i += 3) {
+            particlesPositions[i] = (Math.random() - 0.5) * 80;
+            particlesPositions[i + 1] = (Math.random() - 0.5) * 80;
+            particlesPositions[i + 2] = (Math.random() - 0.5) * 80;
+        }
+
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(particlesPositions, 3));
+        const particlesMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.1, transparent: true, opacity: 0.9 });
+        const starField = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(starField);
+
+        // Estrellas fugazes
+        const shootingStars = [];
+        const shootingStarGeometry = new THREE.ConeGeometry(0.05, 1.5, 4);
+        shootingStarGeometry.rotateX(Math.PI / 2);
+        const shootingStarMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
+
+        for (let i = 0; i < 4; i++) {
+            const star = new THREE.Mesh(shootingStarGeometry, shootingStarMaterial.clone());
+            resetShootingStar(star);
+            scene.add(star);
+            shootingStars.push(star);
+        }
+
+        function resetShootingStar(star) {
+            star.position.set((Math.random() - 0.5) * 50, Math.random() * 20 + 10, (Math.random() - 0.5) * 50);
+            star.velocity = new THREE.Vector3(-(Math.random() * 0.4 + 0.3), -(Math.random() * 0.2 + 0.1), (Math.random() - 0.5) * 0.2);
+            star.material.opacity = 0;
+            star.lifeTime = 0;
+            star.maxLife = Math.random() * 80 + 40;
+        }
+
+        // 4. Creación del Sol (Centro) con datos interactivos
+        const sunGeometry = new THREE.SphereGeometry(1.8, 32, 32);
+        const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffd700 });
+        const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+        sun.userData = { 
+            name: "El Sol", 
+            message: "¡Te amoooo muchoooo mi polola! Eres el centro de mi universo y la luz que ilumina todos mis días. 💐🤍",
+            isSun: true 
+        };
+        scene.add(sun);
+
+        // Etiqueta del Sol
+        const labelsContainer = document.getElementById('labels-container');
+        const sunLabel = document.createElement('div');
+        sunLabel.className = 'planet-label sun-label';
+        sunLabel.innerText = '✨ El Sol ✨';
+        labelsContainer.appendChild(sunLabel);
+
+        // Datos de los planetas y frases de amor
+        const planetsData = [
+            { name: "Mercurio", size: 0.3, distance: 3.5, color: 0xaaaaaa, speed: 0.012, message: "Eres el pensamiento más rápido y constante en mi mente cada mañana. 🤍" },
+            { name: "Venus", size: 0.5, distance: 5.0, color: 0xe3bb76, speed: 0.008, message: "El lucero más brillante del cielo no se compara con el brillo de tus ojos. ✨" },
+            { name: "Tierra", size: 0.6, distance: 7.0, color: 0x3388ff, speed: 0.006, message: "De todo este vasto universo, mi lugar favorito en el mundo entero es estar a tu lado. 🌍" },
+            { name: "Marte", size: 0.4, distance: 9.0, color: 0xc1440e, speed: 0.0045, message: "Contigo siento una pasión infinita que mueve montañas y cruza galaxias. 🔥" },
+            { name: "Júpiter", size: 1.1, distance: 11.5, color: 0xd4a373, speed: 0.0035, message: "Mi amor por ti es tan gigantesco que no cabría en todos los planetas juntos. 🌌" },
+            { name: "Saturno", size: 0.9, distance: 14.0, color: 0xf4e2bb, speed: 0.0025, message: "Nuestro amor tiene anillos de eternidad y recuerdos que durarán para siempre. 💍" },
+            { name: "Urano", size: 0.7, distance: 16.5, color: 0x76d7c4, speed: 0.0018, message: "Tu ternura y tu dulce forma de ser le dan calma y magia a mis días. 💫" },
+            { name: "Neptuno", size: 0.7, distance: 19.0, color: 0x2e86c1, speed: 0.0012, message: "Incluso en la oscuridad y la distancia, mi corazón siempre encuentra el camino hacia ti. 💙" }
+        ];
+
+        const planets = [];
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        planetsData.forEach(data => {
+            const orbitGroup = new THREE.Group();
+            scene.add(orbitGroup);
+
+            const orbitGeometry = new THREE.BufferGeometry();
+            const points = [];
+            for (let i = 0; i <= 64; i++) {
+                const theta = (i / 64) * Math.PI * 2;
+                points.push(new THREE.Vector3(Math.cos(theta) * data.distance, 0, Math.sin(theta) * data.distance));
+            }
+            orbitGeometry.setFromPoints(points);
+            const orbitMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.08 });
+            const orbitLine = new THREE.Line(orbitGeometry, orbitMaterial);
+            scene.add(orbitLine);
+
+            const planetGeometry = new THREE.SphereGeometry(data.size, 32, 32);
+            const planetMaterial = new THREE.MeshStandardMaterial({ color: data.color, roughness: 0.6 });
+            const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
+
+            planetMesh.userData = { name: data.name, message: data.message, isSun: false };
+            orbitGroup.add(planetMesh);
+
+            const label = document.createElement('div');
+            label.className = 'planet-label';
+            label.innerText = data.name;
+            labelsContainer.appendChild(label);
+
+            planets.push({ mesh: planetMesh, distance: data.distance, speed: data.speed, angle: Math.random() * Math.PI * 2, label: label });
+        });
+
+        // 5. Interacción por Click (incluyendo el Sol)
+        window.addEventListener('click', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const allTargets = [sun, ...planets.map(p => p.mesh)];
+            const intersects = raycaster.intersectObjects(allTargets);
+
+            if (intersects.length > 0) {
+                const target = intersects[0].object;
+                mostrarTarjeta(target.userData.name, target.userData.message, target.userData.isSun);
+            }
+        });
+
+        function mostrarTarjeta(nombre, mensaje, esSol) {
+            document.getElementById('card-title').innerText = nombre;
+            document.getElementById('card-text').innerText = mensaje;
+            
+            // Cambiar los iconos superiores de la tarjeta si es el Sol
+            const iconsElem = document.getElementById('modal-icons');
+            if (esSol) {
+                iconsElem.innerText = "💐 🤍 ✨";
+            } else {
+                iconsElem.innerText = "🪐 🤍";
+            }
+
+            document.getElementById('card-modal').classList.add('show');
+        }
+
+        function cerrarTarjeta() {
+            document.getElementById('card-modal').classList.remove('show');
+        }
+
+        // 6. Bucle de Animación
+        const tempV = new THREE.Vector3();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            sun.rotation.y += 0.001;
+
+            // Actualizar etiqueta del Sol
+            sun.getWorldPosition(tempV);
+            tempV.project(camera);
+            const sunX = (tempV.x * .5 + .5) * window.innerWidth;
+            const sunY = (tempV.y * -.5 + .5) * window.innerHeight;
+            if (tempV.z < 1) {
+                sunLabel.style.transform = `translate(-50%, -150%) translate(${sunX}px,${sunY}px)`;
+                sunLabel.style.opacity = '1';
+            } else {
+                sunLabel.style.opacity = '0';
+            }
+
+            // Animar planetas y sus etiquetas
+            planets.forEach(planet => {
+                planet.angle += planet.speed;
+                planet.mesh.position.x = Math.cos(planet.angle) * planet.distance;
+                planet.mesh.position.z = Math.sin(planet.angle) * planet.distance;
+                planet.mesh.rotation.y += 0.005;
+
+                planet.mesh.getWorldPosition(tempV);
+                tempV.project(camera);
+
+                const x = (tempV.x * .5 + .5) * window.innerWidth;
+                const y = (tempV.y * -.5 + .5) * window.innerHeight;
+
+                if (tempV.z < 1) {
+                    planet.label.style.transform = `translate(-50%, -150%) translate(${x}px,${y}px)`;
+                    planet.label.style.opacity = '1';
+                } else {
+                    planet.label.style.opacity = '0';
+                }
+            });
+
+            // Animar estrellas fugazes
+            shootingStars.forEach(star => {
+                star.position.add(star.velocity);
+                star.lifeTime++;
+
+                if (star.lifeTime < 20) {
+                    star.material.opacity += 0.05;
+                } else if (star.lifeTime > star.maxLife - 20) {
+                    star.material.opacity -= 0.05;
+                }
+
+                if (star.lifeTime >= star.maxLife || star.position.y < -10) {
+                    resetShootingStar(star);
+                }
+            });
+
+            starField.rotation.y += 0.0002;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
